@@ -243,7 +243,11 @@ function Settings({ data, onSaved, onSeed, seeding }) {
   };
   const removeDemo = async () => {
     setBusy(true);
-    try { const r = await call('removeDemo'); setMsg({ ok: true, text: `Removed ${r.removed} demo issues.` }); onSaved(); } catch (e) { setMsg({ ok: false, text: e.message }); }
+    try {
+      const r = await call('removeDemo');
+      setMsg({ ok: !r.remaining, text: r.remaining ? `Removed ${r.removed} demo issues; ${r.remaining} could not be deleted (check the Delete issues permission).` : `Removed ${r.removed} demo issues.` });
+      onSaved();
+    } catch (e) { setMsg({ ok: false, text: e.message }); }
     setBusy(false);
   };
   const field = (k, title) => (
