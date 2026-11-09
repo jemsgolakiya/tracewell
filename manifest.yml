@@ -30,7 +30,9 @@ modules:
   rovo:agent:
     - key: tracewell-auditor
       name: Tracewell Auditor
-      description: Answers auditor questions with live traceability evidence from Jira. Finds unverified requirements, unmitigated hazards, failing and suspect tests, and change impact.
+      description: Answers auditor questions with live traceability evidence from
+        Jira. Finds unverified requirements, unmitigated hazards, failing and
+        suspect tests, and change impact.
       icon: resource:static;icon.svg
       prompt: resource:agent-prompts;auditor.md
       conversationStarters:
@@ -58,7 +60,9 @@ modules:
       name: Get audit readiness
       function: fn-readiness
       actionVerb: GET
-      description: Returns the audit-readiness score (0-100), verdict (READY, AT RISK or BLOCKED), coverage metrics and top compliance gaps for a Jira project, optionally limited to one release (fixVersion).
+      description: Returns the audit-readiness score (0-100), verdict (READY, AT RISK
+        or BLOCKED), coverage metrics and top compliance gaps for a Jira
+        project, optionally limited to one release (fixVersion).
       inputs:
         projectKey:
           title: Project key
@@ -69,12 +73,15 @@ modules:
           title: Release
           type: string
           required: false
-          description: Optional fixVersion name, for example v2.1, to run the release gate for one release.
+          description: Optional fixVersion name, for example v2.1, to run the release gate
+            for one release.
     - key: list-compliance-gaps
       name: List compliance gaps
       function: fn-gaps
       actionVerb: GET
-      description: Lists open traceability findings (unverified requirements, unmitigated hazards, failing tests, suspect verifications, orphan tests) with the regulatory clause and corrective action for each.
+      description: Lists open traceability findings (unverified requirements,
+        unmitigated hazards, failing tests, suspect verifications, orphan tests)
+        with the regulatory clause and corrective action for each.
       inputs:
         projectKey:
           title: Project key
@@ -95,7 +102,10 @@ modules:
       name: Trace an item
       function: fn-trace
       actionVerb: GET
-      description: Shows upstream and downstream traceability for one Jira issue (hazards, requirements, implementation, verification tests), its compliance gaps, and linked pull requests and deployments from Teamwork Graph.
+      description: Shows upstream and downstream traceability for one Jira issue
+        (hazards, requirements, implementation, verification tests), its
+        compliance gaps, and linked pull requests and deployments from Teamwork
+        Graph.
       inputs:
         issueKey:
           title: Issue key
@@ -106,13 +116,15 @@ modules:
       name: Analyze change impact
       function: fn-impact
       actionVerb: GET
-      description: Lists every test that must be re-run and every hazard that must be re-assessed if the given requirement, hazard, test or story changes.
+      description: Lists every test that must be re-run and every hazard that must be
+        re-assessed if the given requirement, hazard, test or story changes.
       inputs:
         issueKey:
           title: Issue key
           type: string
           required: false
-          description: Jira issue key of the item that will change. Defaults to the current issue.
+          description: Jira issue key of the item that will change. Defaults to the
+            current issue.
 
   scheduledTrigger:
     - key: tracewell-daily-snapshot
@@ -164,4 +176,4 @@ app:
     name: nodejs22.x
     memoryMB: 256
     architecture: arm64
-  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
+  id: ari:cloud:ecosystem::app/6a5d206b-3ecd-4fbe-b548-7c34104d2eb7
