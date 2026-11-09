@@ -1,0 +1,104 @@
+# Deploys Tracewell with the Forge CLI. Needs two repository secrets:
+#   FORGE_EMAIL      your Atlassian account email
+#   FORGE_API_TOKEN  an Atlassian API token (id.atlassian.com/manage-profile/security/api-tokens)
+name: Deploy to Forge
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Forge environment
+        type: choice
+        options: [development, production]
+        default: development
+      site:
+        description: Site to install on (e.g. example.atlassian.net). Leave empty to use your Codegeist dev site.
+        required: false
+        default: ''
+permissions:
+  contents: write
+concurrency: forge-deploy
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+      FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+      ENVIRONMENT: ${{ inputs.environment }}
+      SITE_INPUT: ${{ inputs.site }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install Forge CLI and dependencies
+        run: |
+          npm install -g @forge/cli@15
+          forge settings set usage-analytics false
+          npm ci
+      - name: Check secrets
+        run: |
+          if [ -z "$FORGE_EMAIL" ] || [ -z "$FORGE_API_TOKEN" ]; then
+            echo "::error::Add FORGE_EMAIL and FORGE_API_TOKEN as repository secrets first."; exit 1; fi
+          forge whoami
+      - name: Offline verification (tests, bundles, UI Kit types, manifest)
+        run: npm run verify
+      - name: Register the app (first run only)
+        run: |
+          if grep -q "00000000-0000-0000-0000-000000000000" manifest.yml; then
+            forge register "Tracewell" --accept-terms
+            git config user.name "tracewell-bot"
+            git config user.email "tracewell-bot@users.noreply.github.com"
+            git add manifest.yml
+            git commit -m "Register Forge app id [skip ci]"
+            git push
+          else
+            echo "App already registered: $(grep -o 'ari:cloud:ecosystem::app/[0-9a-f-]*' manifest.yml)"
+          fi
+      - name: Lint (full, online)
+        run: forge lint -e "$ENVIRONMENT"
+      - name: Deploy
+        run: forge deploy --non-interactive -e "$ENVIRONMENT"
+      - name: Resolve site
+        id: site
+        run: |
+          SITE="$SITE_INPUT"
+          if [ -z "$SITE" ]; then
+            OUT=$(forge site provision 2>&1 || true)
+            echo "$OUT"
+            SITE=$(echo "$OUT" | grep -oE '[a-z0-9-]+\.atlassian\.net' | head -1)
+          fi
+          SITE=$(echo "$SITE" | sed -E 's#^https?://##; s#/.*$##')
+          if [ -z "$SITE" ]; then echo "::error::No site. Re-run with the 'site' input set."; exit 1; fi
+          echo "site=$SITE" >> "$GITHUB_OUTPUT"
+      - name: Install or upgrade in Jira and Confluence
+        env:
+          SITE: ${{ steps.site.outputs.site }}
+        run: |
+          for PRODUCT in jira confluence; do
+            echo "== $PRODUCT on $SITE"
+            if ! forge install --non-interactive --confirm-scopes -e "$ENVIRONMENT" --site "$SITE" --product "$PRODUCT" 2>&1 | tee /tmp/install.log; then
+              if grep -qi "already installed" /tmp/install.log; then
+                forge install --non-interactive --confirm-scopes --upgrade -e "$ENVIRONMENT" --site "$SITE" --product "$PRODUCT" || true
+              else
+                exit 1
+              fi
+            fi
+          done
+          forge install list -e "$ENVIRONMENT" || true
+      - name: Summary
+        if: always()
+        env:
+          SITE: ${{ steps.site.outputs.site }}
+        run: |
+          APP=$(grep -o 'ari:cloud:ecosystem::app/[0-9a-f-]*' manifest.yml | sed 's#.*/##')
+          {
+            echo "## Tracewell deploy ($ENVIRONMENT)"
+            echo "- App ID: \`$APP\`"
+            echo "- Site: https://$SITE"
+            echo "- MCP endpoint: https://mcp.atlassian.com/forge/$APP"
+            echo "- Next: open a Jira project -> Apps -> Tracewell -> Load PumpOS demo project"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Recent logs (on failure)
+        if: failure()
+        run: forge logs -e "$ENVIRONMENT" --since 15m || true
