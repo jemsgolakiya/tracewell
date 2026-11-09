@@ -149,12 +149,22 @@ export async function runSeedStep(projectKey, step, labels) {
 
 export async function removeDemo(projectKey) {
   const state = await getSeedState(projectKey);
-  if (!state?.refs) return { removed: 0 };
+  if (!state?.refs) return { removed: 0, remaining: 0 };
+  const remaining = {};
   let removed = 0;
-  await inChunks(Object.values(state.refs), 6, async ({ key }) => {
-    const res = await user().requestJira(route`/rest/api/3/issue/${key}`, { method: 'DELETE', headers: H });
+  let forbidden = false;
+  await inChunks(Object.entries(state.refs), 6, async ([ref, item]) => {
+    const res = await user().requestJira(route`/rest/api/3/issue/${item.key}`, { method: 'DELETE', headers: H });
     if (res.ok || res.status === 404) removed += 1;
+    else {
+      remaining[ref] = item;
+      if (res.status === 403) forbidden = true;
+    }
   });
-  await setSeedState(projectKey, null);
-  return { removed };
+  // Only forget the demo once every issue is gone, so a retry (or an admin) can finish the job.
+  await setSeedState(projectKey, Object.keys(remaining).length ? { ...state, refs: remaining } : null);
+  if (forbidden && !removed) {
+    throw new Error('You need the "Delete issues" project permission to remove the demo issues. Ask a Jira admin, or use a fresh project for the demo.');
+  }
+  return { removed, remaining: Object.keys(remaining).length };
 }
