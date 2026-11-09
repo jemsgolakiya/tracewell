@@ -31,7 +31,7 @@ function Evidence({ evidence }) {
           <Text size="small" weight="semibold" color="color.text.subtle">Engineering evidence</Text>
           <Lozenge appearance="new">Teamwork Graph</Lozenge>
         </Inline>
-        {!evidence.available ? <Text size="small" color="color.text.subtlest">Teamwork Graph is not available on this site yet.</Text> : null}
+        {!evidence.available ? <Text size="small" color="color.text.subtlest">{`Teamwork Graph is not available on this site yet${evidence.notes?.length ? ` (${evidence.notes[0]})` : ''}.`}</Text> : null}
         {evidence.available && !prs.length && !deps.length ? <Text size="small" color="color.text.subtlest">No linked pull requests or deployments found for the implementation items.</Text> : null}
         {prs.map((p) => (
           <Inline key={p.id} space="space.100" alignBlock="center">
