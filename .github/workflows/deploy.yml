@@ -25,6 +25,8 @@ jobs:
       FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
       ENVIRONMENT: ${{ inputs.environment }}
       SITE_INPUT: ${{ inputs.site }}
+      # Developer Space that owns the app (Atlassian developer console). Override with a repo variable.
+      DEVELOPER_SPACE_ID: ${{ vars.FORGE_DEVELOPER_SPACE_ID || 'daa5b342-3bfb-4d09-879e-9bdf79238280' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,7 +48,7 @@ jobs:
       - name: Register the app (first run only)
         run: |
           if grep -q "00000000-0000-0000-0000-000000000000" manifest.yml; then
-            forge register "Tracewell" --accept-terms
+            forge register "Tracewell" --accept-terms --developer-space-id "$DEVELOPER_SPACE_ID"
             git config user.name "tracewell-bot"
             git config user.email "tracewell-bot@users.noreply.github.com"
             git add manifest.yml
@@ -72,9 +74,11 @@ jobs:
           if [ -z "$SITE" ]; then echo "::error::No site. Re-run with the 'site' input set."; exit 1; fi
           echo "site=$SITE" >> "$GITHUB_OUTPUT"
       - name: Install or upgrade in Jira and Confluence
+        shell: bash
         env:
           SITE: ${{ steps.site.outputs.site }}
         run: |
+          set -o pipefail
           for PRODUCT in jira confluence; do
             echo "== $PRODUCT on $SITE"
             if ! forge install --non-interactive --confirm-scopes -e "$ENVIRONMENT" --site "$SITE" --product "$PRODUCT" 2>&1 | tee /tmp/install.log; then
