@@ -61,7 +61,9 @@ async function stepCreate(projectKey, labels) {
   if (!task) throw new Error('This project has no usable issue type.');
   const versions = await ensureVersions(project);
   const refs = {};
-  await inChunks(DEMO_ITEMS, 6, async (item) => {
+  // Sequential on purpose: keys come out in spec order (PUMP-1 = R1 ... PUMP-26 = S6), so the
+  // demo script, tests and screenshots always reference the same issue keys.
+  await inChunks(DEMO_ITEMS, 1, async (item) => {
     const fields = {
       project: { key: projectKey },
       summary: item.summary,
