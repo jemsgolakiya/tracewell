@@ -61,6 +61,7 @@ async function handleJira(path, opts = {}) {
     if (method === 'PUT' && body.fields.fixVersions) { issue.fixVersions = body.fields.fixVersions.map((v) => v.name); return ok({}, 204); }
     if (method === 'PUT' && body.fields.priority) { issue.priority = body.fields.priority.name; return ok({}, 204); }
     if (method === 'PUT') { const t = now(); issue.summary = body.fields.summary; issue.updated = t; issue.history.push({ created: t, items: [{ field: 'summary', fieldId: 'summary' }] }); return ok({}, 204); }
+    if (method === 'DELETE' && mode.deleteForbidden) return bad(403, 'no delete permission');
     if (method === 'DELETE') { state.issues.delete(m[1]); state.links = state.links.filter((l) => l.a !== m[1] && l.b !== m[1]); return ok({}, 204); }
     return ok({ id: issue.id, key: issue.key, fields: { project: { key: issue.key.split('-')[0] }, summary: issue.summary } });
   }
@@ -109,7 +110,7 @@ const client = {
   requestConfluence: (path, opts) => handleConfluence(String(path), opts),
   requestTeamworkGraph: (q) => handleGraph(q),
 };
-export const mode = { asUserThrows: false, confluenceUser401: false, createScreenWithoutFixVersions: false };
+export const mode = { asUserThrows: false, confluenceUser401: false, createScreenWithoutFixVersions: false, deleteForbidden: false };
 const api = {
   asUser: () => {
     if (mode.asUserThrows) return { ...client, requestJira: async () => { throw new Error('No user context'); } };
