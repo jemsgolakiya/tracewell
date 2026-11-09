@@ -145,6 +145,16 @@ test('confluence macro falls back only for viewers who can browse the project', 
   fake.mode.asUserThrows = false;
 });
 
+test('demo removal keeps state when the user lacks Delete issues permission', async () => {
+  fake.mode.deleteForbidden = true;
+  const r = await app.handler.removeDemo({ payload: {}, context: ctx });
+  assert.equal(r.ok, false);
+  assert.match(r.error, /Delete issues/);
+  fake.mode.deleteForbidden = false;
+  const d = await callR('getOverview');
+  assert.equal(d.hasDemo, true, 'seed state must survive a failed removal');
+});
+
 test('demo can be removed cleanly', async () => {
   const r = await callR('removeDemo');
   assert.equal(r.removed, 26);
