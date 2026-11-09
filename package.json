@@ -1,0 +1,28 @@
+{
+  "name": "tracewell",
+  "version": "1.0.0",
+  "description": "Audit-ready traceability for regulated software teams. Built on Atlassian Forge for Codegeist 2026.",
+  "main": "src/index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check:ui": "node scripts/check-ui.mjs",
+    "check:manifest": "node scripts/validate-manifest.cjs",
+    "check:lint": "node scripts/forge-lint-offline.cjs",
+    "verify": "npm test && npm run check:ui && npm run check:manifest && npm run check:lint"
+  },
+  "dependencies": {
+    "@forge/api": "^8.5.0",
+    "@forge/bridge": "^7.3.0",
+    "@forge/kvs": "^2.1.2",
+    "@forge/react": "^12.5.0",
+    "@forge/resolver": "^2.0.2",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.6.3"
+  }
+}

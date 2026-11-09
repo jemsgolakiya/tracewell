@@ -1,0 +1,167 @@
+modules:
+  jira:projectPage:
+    - key: tracewell-project-page
+      resource: project-page
+      resolver:
+        function: resolver
+      render: native
+      title: Tracewell
+      icon: resource:static;icon.svg
+
+  jira:issuePanel:
+    - key: tracewell-issue-panel
+      resource: issue-panel
+      resolver:
+        function: resolver
+      render: native
+      title: Tracewell trace
+      icon: resource:static;icon.svg
+
+  macro:
+    - key: tracewell-readiness-macro
+      resource: macro
+      resolver:
+        function: resolver
+      render: native
+      title: Tracewell readiness
+      description: Live audit-readiness badge for a Jira project or release.
+      config: true
+
+  rovo:agent:
+    - key: tracewell-auditor
+      name: Tracewell Auditor
+      description: Answers auditor questions with live traceability evidence from Jira. Finds unverified requirements, unmitigated hazards, failing and suspect tests, and change impact.
+      icon: resource:static;icon.svg
+      prompt: resource:agent-prompts;auditor.md
+      conversationStarters:
+        - Are we audit-ready?
+        - Can we ship release v2.1?
+        - Show critical compliance gaps
+        - What must be re-verified if I change this requirement?
+      actions:
+        - get-audit-readiness
+        - list-compliance-gaps
+        - trace-requirement
+        - analyze-change-impact
+
+  rovo:mcp:
+    - key: tracewell-mcp
+      name: Tracewell
+      tools:
+        - get-audit-readiness
+        - list-compliance-gaps
+        - trace-requirement
+        - analyze-change-impact
+
+  action:
+    - key: get-audit-readiness
+      name: Get audit readiness
+      function: fn-readiness
+      actionVerb: GET
+      description: Returns the audit-readiness score (0-100), verdict (READY, AT RISK or BLOCKED), coverage metrics and top compliance gaps for a Jira project, optionally limited to one release (fixVersion).
+      inputs:
+        projectKey:
+          title: Project key
+          type: string
+          required: false
+          description: Jira project key, for example PUMP. Defaults to the current project.
+        fixVersion:
+          title: Release
+          type: string
+          required: false
+          description: Optional fixVersion name, for example v2.1, to run the release gate for one release.
+    - key: list-compliance-gaps
+      name: List compliance gaps
+      function: fn-gaps
+      actionVerb: GET
+      description: Lists open traceability findings (unverified requirements, unmitigated hazards, failing tests, suspect verifications, orphan tests) with the regulatory clause and corrective action for each.
+      inputs:
+        projectKey:
+          title: Project key
+          type: string
+          required: false
+          description: Jira project key. Defaults to the current project.
+        severity:
+          title: Severity
+          type: string
+          required: false
+          description: Optional filter, one of critical, major or minor.
+        fixVersion:
+          title: Release
+          type: string
+          required: false
+          description: Optional fixVersion name to limit findings to one release.
+    - key: trace-requirement
+      name: Trace an item
+      function: fn-trace
+      actionVerb: GET
+      description: Shows upstream and downstream traceability for one Jira issue (hazards, requirements, implementation, verification tests), its compliance gaps, and linked pull requests and deployments from Teamwork Graph.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key, for example PUMP-3. Defaults to the current issue.
+    - key: analyze-change-impact
+      name: Analyze change impact
+      function: fn-impact
+      actionVerb: GET
+      description: Lists every test that must be re-run and every hazard that must be re-assessed if the given requirement, hazard, test or story changes.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of the item that will change. Defaults to the current issue.
+
+  scheduledTrigger:
+    - key: tracewell-daily-snapshot
+      function: fn-snapshot
+      interval: day
+
+  function:
+    - key: resolver
+      handler: index.handler
+    - key: fn-readiness
+      handler: index.getReadiness
+    - key: fn-gaps
+      handler: index.listGaps
+    - key: fn-trace
+      handler: index.traceRequirement
+    - key: fn-impact
+      handler: index.analyzeImpact
+    - key: fn-snapshot
+      handler: index.dailySnapshot
+
+resources:
+  - key: project-page
+    path: src/frontend/projectPage.jsx
+  - key: issue-panel
+    path: src/frontend/issuePanel.jsx
+  - key: macro
+    path: src/frontend/macro.jsx
+  - key: static
+    path: static
+  - key: agent-prompts
+    path: prompts
+
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+    - read:jira-user
+    - manage:jira-project
+    - storage:app
+    - read:space:confluence
+    - read:page:confluence
+    - write:page:confluence
+    - read:graph:issue:jira
+    - read:graph:pull-request:external
+    - read:graph:deployment:external
+
+app:
+  runtime:
+    name: nodejs22.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
