@@ -96,12 +96,12 @@ function Overview({ data, onTab }) {
 function Matrix({ report }) {
   const t = report.framework.terms;
   const head = { cells: [
-    { key: 'key', content: t.requirement, isSortable: true, width: 12 },
-    { key: 'summary', content: 'Summary', width: 30 },
-    { key: 'hazards', content: `${t.hazard}s`, width: 12 },
+    { key: 'key', content: t.requirement, width: 17 },
+    { key: 'summary', content: 'Summary', width: 26 },
+    { key: 'hazards', content: `${t.hazard}s`, width: 11 },
     { key: 'impl', content: 'Implementation', width: 12 },
-    { key: 'tests', content: 'Verification', width: 20 },
-    { key: 'verdict', content: 'Status', isSortable: true, width: 14 },
+    { key: 'tests', content: 'Verification', width: 21 },
+    { key: 'verdict', content: 'Status', width: 13 },
   ] };
   const rows = report.matrix.map((r) => ({
     key: r.key,
@@ -131,12 +131,12 @@ function Gaps({ report }) {
   const [sev, setSev] = useState(null);
   const gaps = report.gaps.filter((g) => !sev || g.severity === sev.value);
   const head = { cells: [
-    { key: 'sev', content: 'Severity', isSortable: true, width: 10 },
-    { key: 'item', content: 'Item', width: 9 },
+    { key: 'sev', content: 'Severity', width: 9 },
+    { key: 'item', content: 'Item', width: 11 },
     { key: 'finding', content: 'Finding', width: 33 },
     { key: 'clause', content: 'Clause', width: 18 },
     { key: 'fix', content: 'Corrective action', width: 20 },
-    { key: 'owner', content: 'Owner', width: 10 },
+    { key: 'owner', content: 'Owner', width: 9 },
   ] };
   const order = { critical: 0, major: 1, minor: 2 };
   const rows = gaps.map((g) => ({
@@ -159,7 +159,7 @@ function Gaps({ report }) {
         </Box>
         <Text color="color.text.subtle">{`${gaps.length} open gap(s). Each one maps to the clause an auditor would cite.`}</Text>
       </Inline>
-      <DynamicTable head={head} rows={rows} rowsPerPage={15} defaultSortKey="sev" emptyView={<Text>No gaps. Nice work.</Text>} />
+      <DynamicTable head={head} rows={rows} rowsPerPage={15} emptyView={<Text>No gaps. Nice work.</Text>} />
     </Stack>
   );
 }
@@ -168,11 +168,11 @@ function Gaps({ report }) {
 function RiskControls({ report }) {
   const t = report.framework.terms;
   const head = { cells: [
-    { key: 'key', content: t.hazard, width: 10 },
-    { key: 'summary', content: 'Summary', width: 40 },
-    { key: 'prio', content: 'Severity', width: 10 },
-    { key: 'controls', content: 'Risk controls', width: 20 },
-    { key: 'verified', content: 'Verified', width: 20 },
+    { key: 'key', content: t.hazard, width: 15 },
+    { key: 'summary', content: 'Summary', width: 41 },
+    { key: 'prio', content: 'Severity', width: 12 },
+    { key: 'controls', content: 'Risk controls', width: 16 },
+    { key: 'verified', content: 'Verified', width: 16 },
   ] };
   const rows = report.hazards.map((h) => ({
     key: h.key,
