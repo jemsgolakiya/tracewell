@@ -17,7 +17,7 @@ const RICH = {
 
 const query = (field, op, fragment) => `query tracewell_${op}($id: ID!) {
   ${field}(id: $id, first: 25) {
-    edges { node { __typename id ${fragment} } }
+    edges { node { __typename ${fragment} } }
     pageInfo { hasNextPage endCursor }
   }
 }`;
@@ -33,13 +33,14 @@ async function run(field, op, fragment, variables) {
   return (body.data[field]?.edges || []).map((e) => e.node).filter(Boolean);
 }
 
-async function fetchKind(field, op, richFragment, variables) {
+// Result nodes are union types, so every field must be selected through an inline fragment.
+async function fetchKind(field, op, richFragment, basicFragment, variables) {
   try {
     return { items: await run(field, op, richFragment, variables), ok: true };
   } catch (richErr) {
     // Field names on external object types can differ by provider; retry with the minimal shape.
     try {
-      return { items: await run(field, `${op}Basic`, '', variables), ok: true, note: richErr.message };
+      return { items: await run(field, `${op}Basic`, basicFragment, variables), ok: true, note: richErr.message };
     } catch (e) {
       return { items: [], ok: false, note: e.message };
     }
@@ -67,8 +68,8 @@ export async function evidenceFor(cloudId, items) {
   for (const item of items.slice(0, 8)) {
     const variables = { id: `ari:cloud:jira:${cloudId}:issue/${item.id}` };
     const [prs, deps] = await Promise.all([
-      fetchKind('jiraWorkItemLinkedExternalPullRequests', 'workItemPullRequests', RICH.pr, variables),
-      fetchKind('jiraWorkItemLinkedExternalDeployments', 'workItemDeployments', RICH.deployment, variables),
+      fetchKind('jiraWorkItemLinkedExternalPullRequests', 'workItemPullRequests', RICH.pr, '... on ExternalPullRequest { id }', variables),
+      fetchKind('jiraWorkItemLinkedExternalDeployments', 'workItemDeployments', RICH.deployment, '... on ExternalDeployment { id }', variables),
     ]);
     available = available || prs.ok || deps.ok;
     if (prs.note) notes.push(prs.note);
