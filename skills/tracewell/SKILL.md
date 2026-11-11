@@ -21,8 +21,8 @@ A site or org admin must enable external MCP access for the Tracewell installati
 |---|---|---|
 | `get-audit-readiness` | "Are we audit-ready?", "Can we ship v2.1?" | `projectKey`, optional `fixVersion` |
 | `list-compliance-gaps` | "What would an auditor flag?" | `projectKey`, optional `severity` (critical, major, minor), optional `fixVersion` |
-| `trace-requirement` | "Show the evidence for PUMP-3" | `issueKey` |
-| `analyze-change-impact` | "What do I need to re-verify if I change PUMP-2?" | `issueKey` |
+| `trace-requirement` | "Show the evidence for PUMPOS-3" | `issueKey` |
+| `analyze-change-impact` | "What do I need to re-verify if I change PUMPOS-2?" | `issueKey` |
 
 ## Workflow
 1. Always call a tool before making any statement about compliance status.
@@ -36,4 +36,4 @@ A site or org admin must enable external MCP access for the Tracewell installati
 >
 > **Agent:** calls `get-audit-readiness {projectKey: "PUMP", fixVersion: "v2.1"}`
 >
-> "**v2.1 is BLOCKED.** VT-104 (low-reservoir alarm) is failing, so hazard PUMP-10 has no verified risk control (IEC 62304 §7.3). Fix the alarm volume and re-run PUMP-16. After that, the remaining gap is PUMP-5, which has no verification test (major)."
+> "**v2.1 is BLOCKED.** VT-104 (low-reservoir alarm) is failing, so hazard PUMPOS-10 has no verified risk control (IEC 62304 §7.3). Fix the alarm volume and re-run PUMPOS-16. After that, the remaining gap is PUMPOS-5, which has no verification test (major)."
