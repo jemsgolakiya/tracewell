@@ -7,8 +7,9 @@ import { runSeedStep, removeDemo, SEED_STEPS } from './lib/seed.js';
 import { getSeedState } from './lib/storage.js';
 import { listSpaces, dossierStorage, createDossierPage } from './lib/confluence.js';
 import { FRAMEWORKS } from './lib/frameworks.js';
+import { applyRemedy } from './lib/remedy.js';
 
-export { getReadiness, listGaps, traceRequirement, analyzeImpact } from './agent.js';
+export { getReadiness, listGaps, traceRequirement, analyzeImpact, fixGap } from './agent.js';
 import { withClient } from './agent.js';
 
 const resolver = new Resolver();
@@ -53,6 +54,9 @@ resolver.define('seedStep', wrap(async (req) => {
   const config = await getConfig(projectKey);
   return runSeedStep(projectKey, step, config.labels);
 }));
+
+// One-click fix for a gap, as the signed-in user.
+resolver.define('applyRemedy', wrap(async (req) => applyRemedy(asUser(), { projectKey: projectKeyOf(req), gapId: String(req.payload?.gapId || '') })));
 
 resolver.define('removeDemo', wrap(async (req) => removeDemo(projectKeyOf(req))));
 

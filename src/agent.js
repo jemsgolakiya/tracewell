@@ -3,6 +3,7 @@
 // external AI clients (Claude, Cursor, VS Code ...).
 import { asUser, asApp, getProject, userCanBrowse, getIssue } from './lib/jira.js';
 import { readinessReport, trace, impact } from './lib/service.js';
+import { applyRemedy } from './lib/remedy.js';
 
 const KEY_RE = /^[A-Z][A-Z0-9_]{0,19}$/;
 const ISSUE_RE = /^[A-Z][A-Z0-9_]{0,19}-\d+$/;
@@ -116,6 +117,37 @@ export async function analyzeImpact(payload, context) {
     if (!res) return { ok: true, issueKey, message: 'This issue is not part of the trace graph.' };
     return { ok: true, ...res };
   } catch (e) {
+    return fail(e.message);
+  }
+}
+
+const FINDINGS = ['REQ_VERIFIED', 'REQ_TEST_PASS', 'REQ_TEST_CURRENT', 'REQ_IMPLEMENTED', 'HAZ_MITIGATED'];
+
+/**
+ * Write action. Runs ONLY as the invoking user (no app fallback), so Jira's create/edit/link
+ * permissions always apply. Rovo asks the user to confirm CREATE actions before they run.
+ */
+export async function fixGap(payload, context) {
+  const issueKey = issueKeyFrom(payload);
+  if (!issueKey) return fail('Which issue has the gap? Give me a key like PUMP-5.');
+  const projectKey = issueKey.split('-')[0];
+  const finding = String(payload?.finding || '').trim().toUpperCase();
+  if (finding && !FINDINGS.includes(finding)) return fail(`Unknown finding. Use one of ${FINDINGS.join(', ')}.`);
+  try {
+    let gapId = finding ? `${finding}:${issueKey}` : null;
+    if (!gapId) {
+      const { report } = await readinessReport(asUser(), projectKey);
+      const gap = report.gaps.find((g) => g.key === issueKey && g.remedy);
+      if (!gap) {
+        const open = report.gaps.filter((g) => g.key === issueKey);
+        return { ok: true, issueKey, applied: false, message: open.length ? `${issueKey} has ${open.length} gap(s), but none can be fixed automatically: ${open.map((g) => g.fix).join(' ')}` : `${issueKey} has no open gaps.` };
+      }
+      gapId = gap.id;
+    }
+    const result = await applyRemedy(asUser(), { projectKey, gapId });
+    return { ok: true, issueKey, ...result };
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) return fail('You do not have permission to create or edit issues in this project, or Tracewell has not been granted access yet. Open Tracewell in Jira once and try again.');
     return fail(e.message);
   }
 }
