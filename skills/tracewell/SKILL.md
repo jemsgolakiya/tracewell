@@ -23,6 +23,7 @@ A site or org admin must enable external MCP access for the Tracewell installati
 | `list-compliance-gaps` | "What would an auditor flag?" | `projectKey`, optional `severity` (critical, major, minor), optional `fixVersion` |
 | `trace-requirement` | "Show the evidence for PUMPOS-3" | `issueKey` |
 | `analyze-change-impact` | "What do I need to re-verify if I change PUMPOS-2?" | `issueKey` |
+| `fix-compliance-gap` | "Create the missing verification test for PUMPOS-5" (a write action, so confirm with the user first) | `issueKey`, optional `finding` |
 
 ## Workflow
 1. Always call a tool before making any statement about compliance status.
