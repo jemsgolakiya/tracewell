@@ -55,6 +55,12 @@ async function handleJira(path, opts = {}) {
     issue.cat = cat; issue.updated = t; issue.catChanged = t; if (cat === 'done') issue.resolved = t;
     return ok({}, 204);
   }
+  if ((m = path.match(/^\/rest\/api\/3\/issue\/([A-Z0-9_]+-\d+)\/comment$/)) && method === 'POST') {
+    const issue = state.issues.get(m[1]);
+    if (!issue) return bad(404);
+    (issue.comments = issue.comments || []).push(body.body);
+    return ok({ id: String(issue.comments.length) }, 201);
+  }
   if ((m = path.match(/^\/rest\/api\/3\/issue\/([A-Z0-9_]+-\d+)(\?.*)?$/))) {
     const issue = state.issues.get(m[1]);
     if (!issue) return bad(404, 'Issue does not exist');
