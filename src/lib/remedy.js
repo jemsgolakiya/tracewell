@@ -87,6 +87,23 @@ async function trackDemo(projectKey, items) {
   await setSeedState(projectKey, { ...state, refs });
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Jira search is eventually consistent: a new issue or link can take a few seconds to show up
+ * in /search/jql. Wait (bounded) until the fix is visible, so the refreshed score is honest.
+ */
+async function waitUntilVisible(client, projectKey, { gapId, createdKeys, expectClosed }) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const { graph } = await loadGraph(client, projectKey);
+    const present = createdKeys.every((k) => graph.nodes.has(k));
+    const closed = !expectClosed || !evaluate(graph).gaps.some((g) => g.id === gapId);
+    if (present && closed) return true;
+    await sleep(1500);
+  }
+  return false;
+}
+
 /**
  * Apply the remedy for one gap.
  * @param {*} client asUser() client
@@ -172,8 +189,11 @@ export async function applyRemedy(client, { projectKey, gapId }) {
 
   await trackDemo(projectKey, created).catch(() => {});
   const keys = created.map((c) => c.key);
+  const visible = await waitUntilVisible(client, projectKey, {
+    gapId, createdKeys: keys, expectClosed: gap.remedy.action !== 'log-defect',
+  }).catch(() => false);
   const message = gap.remedy.action === 'reverify'
     ? `Re-opened ${updated.map((u) => u.key).join(', ')} for re-verification against the changed ${gap.key}.`
     : `Created ${keys.join(', ')} and linked it to ${gap.remedy.action === 'log-defect' ? gap.remedy.targets.join(', ') : gap.key}.`;
-  return { applied: true, gapId, action: gap.remedy.action, created, updated, message };
+  return { applied: true, gapId, action: gap.remedy.action, created, updated, message: visible ? message : `${message} Jira is still indexing the change, so refresh in a few seconds.` };
 }
