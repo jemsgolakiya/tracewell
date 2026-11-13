@@ -114,7 +114,7 @@ export function evaluate(graph, { scopeKeys } = {}) {
     tests = tests.filter((t) => linked(graph, t, 'requirement').some((r) => reqKeys.has(r.key)));
   }
 
-  const record = (checkId, node, pass, severity, detail, fix) => {
+  const record = (checkId, node, pass, severity, detail, fix, remedy = null) => {
     results.push({ checkId, key: node.key, pass, severity });
     if (!pass) {
       gaps.push({
@@ -129,6 +129,7 @@ export function evaluate(graph, { scopeKeys } = {}) {
         fix,
         clause: fw.clauses[checkId],
         assignee: node.assignee || null,
+        remedy,
       });
     }
   };
@@ -139,18 +140,22 @@ export function evaluate(graph, { scopeKeys } = {}) {
     const sev = s.safetyRelevant ? 'critical' : 'major';
     record('REQ_VERIFIED', req, s.tests.length > 0, sev,
       `No ${fw.terms.test.toLowerCase()} is linked to this ${fw.terms.requirement.toLowerCase()}.`,
-      `Create a ${fw.terms.test.toLowerCase()} and link it to ${req.key}.`);
+      `Create a ${fw.terms.test.toLowerCase()} and link it to ${req.key}.`,
+      { action: 'create-test', label: `Create ${fw.terms.test.toLowerCase()}` });
     if (s.tests.length) {
       record('REQ_TEST_PASS', req, s.failing.length === 0, sev,
         s.failing.length ? `Failing: ${s.failing.map((t) => t.key).join(', ')}.` : '',
-        'Fix the defect or record a justified deviation, then re-run the test.');
+        'Fix the defect or record a justified deviation, then re-run the test.',
+        { action: 'log-defect', label: 'Log defect', targets: s.failing.map((t) => t.key) });
       record('REQ_TEST_CURRENT', req, s.suspect.length === 0, 'major',
         s.suspect.length ? `${req.key} changed after ${s.suspect.map((t) => t.key).join(', ')} passed.` : '',
-        `Re-run ${s.suspect.map((t) => t.key).join(', ') || 'the linked tests'} against the changed requirement.`);
+        `Re-run ${s.suspect.map((t) => t.key).join(', ') || 'the linked tests'} against the changed requirement.`,
+        { action: 'reverify', label: 'Re-open for re-verification', targets: s.suspect.map((t) => t.key) });
     }
     record('REQ_IMPLEMENTED', req, s.impl.length > 0, 'minor',
       'No implementation item (story, task or PR) is linked.',
-      `Link the story or task that implements ${req.key}.`);
+      `Link the story or task that implements ${req.key}.`,
+      { action: 'create-story', label: 'Create story' });
     matrix.push({
       key: req.key,
       summary: req.summary,
@@ -171,7 +176,8 @@ export function evaluate(graph, { scopeKeys } = {}) {
     const high = isHighPriority(hz.priority);
     record('HAZ_MITIGATED', hz, reqs.length > 0, 'critical',
       `No ${fw.terms.requirement.toLowerCase()} is linked as a risk control.`,
-      `Define a risk control ${fw.terms.requirement.toLowerCase()} and link it to ${hz.key}.`);
+      `Define a risk control ${fw.terms.requirement.toLowerCase()} and link it to ${hz.key}.`,
+      { action: 'create-control', label: 'Create risk control' });
     let controlsVerified = false;
     if (reqs.length) {
       const weak = reqs.filter((r) => requirementState(graph, r).verdict !== 'Verified');
