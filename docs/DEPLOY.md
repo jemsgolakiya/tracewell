@@ -27,7 +27,7 @@ Wait until it prints your site URL (`https://<something>.atlassian.net`). Open i
 ```bash
 cd tracewell
 npm install
-npm run verify          # 26 tests + bundle + UI Kit prop types + manifest + lint, all offline
+npm run verify          # 31 tests + bundle + UI Kit prop types + manifest + lint, all offline
 forge register          # name it "Tracewell"; this writes YOUR app id into manifest.yml
 forge lint              # full lint, including the scope checks that need a login
 forge deploy

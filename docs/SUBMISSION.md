@@ -37,7 +37,7 @@ A **one-click PumpOS demo** (a fictional insulin pump, 26 linked issues) lets an
 - **Rovo agent** (`rovo:agent`) with four `action` modules, and the **same actions exposed through `rovo:mcp`**. One implementation serves both surfaces.
 - **Teamwork Graph API** curated queries (`jiraWorkItemLinkedExternalPullRequests`, `jiraWorkItemLinkedExternalDeployments`) via `asUser().requestTeamworkGraph`. This extends the trace chain from requirement → story → PR → deployment.
 - **Jira REST** (`/search/jql`, bulk changelog, versions, permissions check), **Confluence REST v2** for the dossier, **Forge KVS** for settings and snapshots, and a **scheduledTrigger** for the daily readiness trend.
-- A **pure, framework-agnostic compliance engine** (`engine.js`) with 26 automated tests: engine unit tests on the exact dataset the demo seeds, plus end-to-end tests that drive the real resolvers, seeder, agent actions and dossier export against fakes of the Atlassian APIs.
+- A **pure, framework-agnostic compliance engine** (`engine.js`) with 31 automated tests: engine unit tests on the exact dataset the demo seeds, plus end-to-end tests that drive the real resolvers, seeder, agent actions and dossier export against fakes of the Atlassian APIs.
 - **Security by design:** everything runs `asUser()`, actions are read-only `GET`, there is no external egress, and the MCP fallback to `asApp()` happens only after an explicit `BROWSE_PROJECTS` permission check for the calling account.
 
 ## Challenges we ran into
