@@ -145,6 +145,72 @@ test('confluence macro falls back only for viewers who can browse the project', 
   fake.mode.asUserThrows = false;
 });
 
+const gapsOf = (d, key) => d.report.gaps.filter((g) => g.key === key).map((g) => g.checkId);
+
+test('one-click fix: create the missing verification test', async () => {
+  const before = await callR('getOverview');
+  const gap = before.report.gaps.find((g) => g.id === 'REQ_VERIFIED:PUMP-5');
+  assert.equal(gap.remedy.action, 'create-test');
+  const r = await callR('applyRemedy', { gapId: gap.id });
+  assert.equal(r.applied, true);
+  assert.equal(r.created.length, 1);
+  const created = fake.state.issues.get(r.created[0].key);
+  assert.match(created.summary, /^Verify: /);
+  assert.ok(created.labels.includes('tw-test') && created.labels.includes('tracewell-demo'));
+  assert.ok(fake.state.links.some((l) => l.a === created.key && l.b === 'PUMP-5'));
+  const after = await callR('getOverview');
+  assert.ok(!gapsOf(after, 'PUMP-5').includes('REQ_VERIFIED'));
+  assert.equal(after.report.matrix.find((m) => m.key === 'PUMP-5').verdict, 'In verification');
+  const again = await callR('applyRemedy', { gapId: gap.id });
+  assert.equal(again.alreadyResolved, true, 'a second click never creates duplicates');
+  assert.equal(fake.state.issues.size, 27);
+});
+
+test('one-click fix: re-open a suspect test for re-verification', async () => {
+  const r = await callR('applyRemedy', { gapId: 'REQ_TEST_CURRENT:PUMP-4' });
+  assert.equal(r.applied, true);
+  assert.deepEqual(r.updated.map((u) => u.key), ['PUMP-17']);
+  const test17 = fake.state.issues.get('PUMP-17');
+  assert.equal(test17.cat, 'new');
+  assert.match(test17.comments[0].content[0].content[0].text, /Re-verification required: PUMP-4 changed/);
+  const after = await callR('getOverview');
+  assert.equal(after.report.metrics.suspectLinks, 0);
+  assert.equal(after.report.matrix.find((m) => m.key === 'PUMP-4').verdict, 'In verification');
+});
+
+test('Rovo/MCP fix action: risk control for an unmitigated hazard, defect for a failing test', async () => {
+  const ctl = await app.fixGap({ issueKey: 'PUMP-12' }, {});
+  assert.equal(ctl.ok, true);
+  assert.equal(ctl.action, 'create-control');
+  const control = fake.state.issues.get(ctl.created[0].key);
+  assert.ok(control.labels.includes('tw-req') && control.labels.includes('tw-safety'));
+  const after = await callR('getOverview');
+  assert.ok(!gapsOf(after, 'PUMP-12').includes('HAZ_MITIGATED'));
+  assert.ok(gapsOf(after, control.key).includes('REQ_VERIFIED'), 'the new control is honestly unverified');
+
+  const defect = await app.fixGap({ issueKey: 'PUMP-3', finding: 'req_test_pass' }, {});
+  assert.equal(defect.action, 'log-defect');
+  assert.ok(fake.state.links.some((l) => l.a === defect.created[0].key && l.b === 'PUMP-16'));
+
+  const none = await app.fixGap({ issueKey: 'PUMP-1' }, {});
+  assert.equal(none.applied, false);
+  const badFinding = await app.fixGap({ issueKey: 'PUMP-1', finding: 'DROP_TABLE' }, {});
+  assert.equal(badFinding.ok, false);
+});
+
+test('fixes run only as the user and stay inside the project', async () => {
+  const count = fake.state.issues.size;
+  fake.mode.asUserThrows = true;
+  const r = await app.fixGap({ issueKey: 'PUMP-7' }, { principal: { accountId: 'allowed' } });
+  fake.mode.asUserThrows = false;
+  assert.equal(r.ok, false, 'no app-identity fallback for writes');
+  assert.equal(fake.state.issues.size, count);
+  const cross = await app.handler.applyRemedy({ payload: { gapId: 'REQ_VERIFIED:OTHER-5' }, context: ctx });
+  assert.equal(cross.ok, false);
+  const junk = await app.handler.applyRemedy({ payload: { gapId: 'x' }, context: ctx });
+  assert.equal(junk.ok, false);
+});
+
 test('demo removal keeps state when the user lacks Delete issues permission', async () => {
   fake.mode.deleteForbidden = true;
   const r = await app.handler.removeDemo({ payload: {}, context: ctx });
@@ -157,6 +223,6 @@ test('demo removal keeps state when the user lacks Delete issues permission', as
 
 test('demo can be removed cleanly', async () => {
   const r = await callR('removeDemo');
-  assert.equal(r.removed, 26);
+  assert.equal(r.removed, 29, 'demo issues created by fixes are removed too');
   assert.equal(fake.state.issues.size, 0);
 });
