@@ -1,4 +1,4 @@
-# Voice-over for the 3:23 demo cut (optional)
+# Voice-over for the 3:53 demo cut (optional)
 
 The video has on-screen captions and a soft music bed, so it works without narration.
 If you want to add your voice, read each line when its timestamp comes up. They are written to fit
@@ -16,15 +16,18 @@ the scene at a calm pace. In YouTube Studio or CapCut, put your recording over t
 | 0:56 | Charts | "A daily snapshot turns readiness into a trend the team can watch improve." |
 | 1:04 | Matrix / suspect | "And here's what spreadsheets never catch. PUMPOS-4 changed after its test passed, so that test no longer proves anything." |
 | 1:14 | Suspect panel | "Tracewell finds this in the Jira changelog. It only counts real edits, so comments and transitions never raise false alarms." |
-| 1:24 | Release gate | "Can we ship version 2.1? Pick the release, and the answer is no." |
-| 1:33 | Gate matrix | "The alarm requirement fails because its verification test is failing." |
-| 1:41 | Gate fixed | "Fix the test, refresh, and we're at 84: at risk, not blocked. That's a ship decision made with evidence." |
-| 1:52 | Issue panel | "Every Jira issue shows its full trace, all the way through Teamwork Graph to pull requests and deployments." |
-| 2:02 | Impact | "Before anyone edits a safety requirement, Tracewell shows the cost: two tests to re-run and one hazard to re-assess." |
-| 2:12 | Rovo question | "Auditors want answers, not dashboards. So we ask Rovo." |
-| 2:19 | Rovo answer | "The Tracewell Auditor agent answers with live evidence. Every claim comes from a tool call." |
-| 2:30 | Rovo impact | "It explains change impact in plain words." |
-| 2:40 | MCP | "The same four tools are exposed through a Forge MCP server for Claude, Cursor and VS Code, and they always run as the user." |
-| 2:50 | Dossier | "At audit time, one click writes the whole dossier to Confluence." |
-| 3:01 | Architecture | "It's all Forge, running as the user, and no data leaves Atlassian." |
-| 3:13 | Close | "Tracewell: audit-ready at every commit." |
+| 1:24 | Release gate | "Can we ship version 2.1? Pick the release, and the answer is no: the alarm test is failing." |
+| 1:33 | Gate fixed | "Fix the test, refresh, and we're at 84: at risk, not blocked. That's a ship decision made with evidence." |
+| 1:44 | Issue panel | "Every Jira issue shows its full trace, all the way through Teamwork Graph to pull requests and deployments." |
+| 1:54 | Impact | "Before anyone edits a safety requirement, Tracewell shows the cost: two tests to re-run and one hazard to re-assess." |
+| 2:04 | Fix buttons | "But Tracewell doesn't just report gaps. Every gap has a fix button that creates the missing Jira work, already linked." |
+| 2:14 | Fix applied | "One click re-opens the suspect test with a comment explaining why. Suspect verifications drop to zero." |
+| 2:24 | Rovo question | "Auditors want answers, not dashboards. So we ask Rovo." |
+| 2:31 | Rovo answer | "The Tracewell Auditor agent answers with live evidence. Every claim comes from a tool call." |
+| 2:42 | Rovo impact | "It explains change impact in plain words." |
+| 2:52 | Rovo fix confirm | "And it can fix things too. It's a write action, so Rovo asks for confirmation first." |
+| 3:01 | Rovo fix done | "The test is created and linked, and the agent reports exactly what it did." |
+| 3:10 | MCP | "The same five tools are exposed through a Forge MCP server for Claude, Cursor and VS Code, and they always run as the user." |
+| 3:20 | Dossier | "At audit time, one click writes the whole dossier to Confluence." |
+| 3:31 | Architecture | "It's all Forge, running as the user, and no data leaves Atlassian." |
+| 3:43 | Close | "Tracewell: audit-ready at every commit." |
