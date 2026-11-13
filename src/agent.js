@@ -145,7 +145,15 @@ export async function fixGap(payload, context) {
       gapId = gap.id;
     }
     const result = await applyRemedy(asUser(), { projectKey, gapId });
-    return { ok: true, issueKey, ...result };
+    // Report the facts after the fix so the agent never has to guess the new state.
+    const after = await readinessReport(asUser(), projectKey).then(({ report }) => ({
+      projectReadinessScore: report.score,
+      projectVerdict: report.verdict,
+      openGapsInProject: report.counts,
+      remainingGapsOnThisIssue: report.gaps.filter((g) => g.key === issueKey).map((g) => g.title),
+      newGapsOnCreatedItems: report.gaps.filter((g) => (result.created || []).some((c) => c.key === g.key)).map((g) => `${g.key}: ${g.title}`),
+    })).catch(() => null);
+    return { ok: true, issueKey, ...result, after };
   } catch (e) {
     if (e.status === 401 || e.status === 403) return fail('You do not have permission to create or edit issues in this project, or Tracewell has not been granted access yet. Open Tracewell in Jira once and try again.');
     return fail(e.message);
