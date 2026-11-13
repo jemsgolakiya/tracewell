@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ForgeReconciler, { Box, Inline, Stack, Text, Heading, Lozenge, SectionMessage, Spinner, Link, Button, xcss } from '@forge/react';
-import { ROW_APPEARANCE, SEVERITY_APPEARANCE, RESULT_APPEARANCE, ROLE_LABEL, IssueLink, cardStyle, call } from './shared';
+import { ROW_APPEARANCE, SEVERITY_APPEARANCE, RESULT_APPEARANCE, ROLE_LABEL, IssueLink, cardStyle, call, FixButton } from './shared';
 
 const section = xcss({ paddingBlockStart: 'space.100' });
 
@@ -56,6 +56,7 @@ function Evidence({ evidence }) {
 function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [flash, setFlash] = useState(null);
   const load = () => {
     setData(null); setError(null);
     call('getTrace').then(setData).catch((e) => setError(e.message));
@@ -81,6 +82,14 @@ function App() {
         <Button appearance="subtle" spacing="compact" onClick={load}>Refresh</Button>
       </Inline>
 
+      {flash ? (
+        <SectionMessage appearance={flash.ok ? 'success' : 'warning'}>
+          <Inline space="space.100" alignBlock="center" shouldWrap>
+            <Text size="small">{flash.message}</Text>
+            {(flash.created || []).map((c) => <IssueLink key={c.key} issueKey={c.key} />)}
+          </Inline>
+        </SectionMessage>
+      ) : null}
       {t.gaps.length ? (
         <Stack space="space.100">
           {t.gaps.map((g) => (
@@ -88,6 +97,7 @@ function App() {
               <Text size="small">{g.detail}</Text>
               <Text size="small">{`Fix: ${g.fix}`}</Text>
               <Inline space="space.100"><Lozenge appearance={SEVERITY_APPEARANCE[g.severity]}>{g.severity}</Lozenge><Text size="small" color="color.text.subtlest">{g.clause}</Text></Inline>
+              <Box><FixButton gap={g} onDone={(r) => { setFlash(r); if (r.ok) load(); }} /></Box>
             </SectionMessage>
           ))}
         </Stack>

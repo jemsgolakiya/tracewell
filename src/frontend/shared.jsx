@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Inline, Stack, Text, Lozenge, Link, Heading, xcss } from '@forge/react';
+import React, { useState } from 'react';
+import { Box, Inline, Stack, Text, Lozenge, Link, Heading, Button, xcss } from '@forge/react';
 import { invoke } from '@forge/bridge';
 
 export const VERDICT_APPEARANCE = { READY: 'success', 'AT RISK': 'moved', BLOCKED: 'removed', 'NO DATA': 'default' };
@@ -56,3 +56,23 @@ export async function call(fn, payload = undefined) {
 }
 
 export const half = xcss({ flexGrow: 1, width: '48%', minWidth: '320px' });
+
+/**
+ * One-click fix for a gap. Calls the applyRemedy resolver (runs as the user) and reports back.
+ * @param {{ gap: any, onDone: (result: { ok: boolean, message: string, created?: any[] }) => void, appearance?: any }} props
+ */
+export function FixButton({ gap, onDone, appearance = 'default' }) {
+  const [busy, setBusy] = useState(false);
+  if (!gap.remedy) return null;
+  const run = async () => {
+    setBusy(true);
+    try {
+      const r = await call('applyRemedy', { gapId: gap.id });
+      onDone({ ok: r.applied || r.alreadyResolved, message: r.message, created: r.created });
+    } catch (e) {
+      onDone({ ok: false, message: e.message });
+    }
+    setBusy(false);
+  };
+  return <Button appearance={appearance} spacing="compact" iconBefore="add" isDisabled={busy} onClick={run}>{busy ? 'Working…' : gap.remedy.label}</Button>;
+}

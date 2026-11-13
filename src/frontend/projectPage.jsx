@@ -6,7 +6,7 @@ import ForgeReconciler, {
 } from '@forge/react';
 import {
   VERDICT_APPEARANCE, ROW_APPEARANCE, SEVERITY_APPEARANCE, RESULT_APPEARANCE,
-  IssueLink, KeyList, Kpi, cardStyle, pct, call, half,
+  IssueLink, KeyList, Kpi, cardStyle, pct, call, half, FixButton,
 } from './shared';
 
 
@@ -22,7 +22,7 @@ const SEED_STEPS = [
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------------------------------------------------------------- Overview
-function Overview({ data, onTab }) {
+function Overview({ data, onTab, onFixed }) {
   const { report, trend, fixVersion } = data;
   const m = report.metrics;
   const top = report.gaps.slice(0, 5);
@@ -78,6 +78,7 @@ function Overview({ data, onTab }) {
                 <Text weight="semibold">{g.title}</Text>
                 <Text size="small" color="color.text.subtle">{`${g.detail} → ${g.fix}`}</Text>
                 <Text size="small" color="color.text.subtlest">{g.clause}</Text>
+                <Box><FixButton gap={g} onDone={onFixed} /></Box>
               </Stack>
             </Inline>
           )) : <Text>No open gaps. 🎉</Text>}
@@ -127,16 +128,16 @@ function Matrix({ report }) {
 }
 
 // ---------------------------------------------------------------- Gaps
-function Gaps({ report }) {
+function Gaps({ report, onFixed }) {
   const [sev, setSev] = useState(null);
   const gaps = report.gaps.filter((g) => !sev || g.severity === sev.value);
   const head = { cells: [
     { key: 'sev', content: 'Severity', width: 9 },
     { key: 'item', content: 'Item', width: 11 },
-    { key: 'finding', content: 'Finding', width: 33 },
-    { key: 'clause', content: 'Clause', width: 18 },
-    { key: 'fix', content: 'Corrective action', width: 20 },
-    { key: 'owner', content: 'Owner', width: 9 },
+    { key: 'finding', content: 'Finding', width: 28 },
+    { key: 'clause', content: 'Clause', width: 16 },
+    { key: 'fix', content: 'Corrective action', width: 22 },
+    { key: 'owner', content: 'Owner', width: 14 },
   ] };
   const order = { critical: 0, major: 1, minor: 2 };
   const rows = gaps.map((g) => ({
@@ -146,7 +147,7 @@ function Gaps({ report }) {
       { key: g.key, content: <IssueLink issueKey={g.key} /> },
       { key: g.title, content: <Stack space="space.025"><Text weight="semibold">{g.title}</Text><Text size="small">{g.summary}</Text><Text size="small" color="color.text.subtle">{g.detail}</Text></Stack> },
       { key: g.clause, content: <Text size="small">{g.clause}</Text> },
-      { key: g.fix, content: <Text size="small">{g.fix}</Text> },
+      { key: g.fix, content: <Stack space="space.075"><Text size="small">{g.fix}</Text><Box><FixButton gap={g} onDone={onFixed} /></Box></Stack> },
       { key: g.assignee?.displayName || 'zz', content: <Text size="small">{g.assignee?.displayName || 'Unassigned'}</Text> },
     ],
   }));
@@ -157,7 +158,7 @@ function Gaps({ report }) {
           <Select placeholder="All severities" isClearable value={sev} onChange={setSev}
             options={[{ label: 'Critical', value: 'critical' }, { label: 'Major', value: 'major' }, { label: 'Minor', value: 'minor' }]} />
         </Box>
-        <Text color="color.text.subtle">{`${gaps.length} open gap(s). Each one maps to the clause an auditor would cite.`}</Text>
+        <Text color="color.text.subtle">{`${gaps.length} open gap(s). Each one maps to the clause an auditor would cite. Fix buttons create the missing Jira work, linked into the trace.`}</Text>
       </Inline>
       <DynamicTable head={head} rows={rows} rowsPerPage={15} emptyView={<Text>No gaps. Nice work.</Text>} />
     </Stack>
@@ -314,6 +315,7 @@ function App() {
   const [fixVersion, setFixVersion] = useState(null);
   const [tab, setTab] = useState(0);
   const [seed, setSeed] = useState(null);
+  const [flash, setFlash] = useState(null);
 
   const load = useCallback(async (version = fixVersion) => {
     setLoading(true); setError(null);
@@ -322,6 +324,11 @@ function App() {
   }, [fixVersion]);
 
   useEffect(() => { load(); }, []);
+
+  const onFixed = async (result) => {
+    setFlash(result);
+    if (result.ok) await load();
+  };
 
   const runSeed = async () => {
     setSeed({ index: 0, label: SEED_STEPS[0].label });
@@ -385,6 +392,15 @@ function App() {
           </Inline>
         </Inline>
         {error ? <SectionMessage appearance="error"><Text>{error}</Text></SectionMessage> : null}
+        {flash ? (
+          <SectionMessage appearance={flash.ok ? 'success' : 'warning'} title={flash.ok ? 'Fix applied' : 'Could not apply the fix'}>
+            <Inline space="space.100" alignBlock="center" shouldWrap>
+              <Text>{flash.message}</Text>
+              {(flash.created || []).map((c) => <IssueLink key={c.key} issueKey={c.key} />)}
+              <Button appearance="subtle" spacing="compact" onClick={() => setFlash(null)}>Dismiss</Button>
+            </Inline>
+          </SectionMessage>
+        ) : null}
         {empty ? <Onboarding onSeed={runSeed} /> : (
           <Tabs id="tracewell-tabs" selected={tab} onChange={setTab}>
             <TabList>
@@ -395,9 +411,9 @@ function App() {
               <Tab>Audit dossier</Tab>
               <Tab>Settings</Tab>
             </TabList>
-            <TabPanel><Box xcss={pad}><Overview data={data} onTab={setTab} /></Box></TabPanel>
+            <TabPanel><Box xcss={pad}><Overview data={data} onTab={setTab} onFixed={onFixed} /></Box></TabPanel>
             <TabPanel><Box xcss={pad}><Matrix report={report} /></Box></TabPanel>
-            <TabPanel><Box xcss={pad}><Gaps report={report} /></Box></TabPanel>
+            <TabPanel><Box xcss={pad}><Gaps report={report} onFixed={onFixed} /></Box></TabPanel>
             <TabPanel><Box xcss={pad}><RiskControls report={report} /></Box></TabPanel>
             <TabPanel><Box xcss={pad}><Dossier data={data} /></Box></TabPanel>
             <TabPanel><Box xcss={pad}><Settings data={data} onSaved={() => load()} onSeed={runSeed} seeding={!!seed} /></Box></TabPanel>
