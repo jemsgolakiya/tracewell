@@ -62,7 +62,7 @@ KVS (config, snapshots) ─────────┘        │
 See **[docs/DEPLOY.md](docs/DEPLOY.md)**. In short:
 ```bash
 npm install -g @forge/cli && forge login
-npm install && npm run verify      # 26 tests, bundling, UI Kit prop types, manifest, lint
+npm install && npm run verify      # 31 tests, bundling, UI Kit prop types, manifest, lint
 forge register && forge deploy
 forge install --product jira && forge install --product confluence
 ```
