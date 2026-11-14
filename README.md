@@ -33,12 +33,13 @@ Tracewell reads what teams **already have in Jira** (requirements, hazards, test
 | Surface | What it does |
 |---|---|
 | **Jira project page** | Audit-readiness score and verdict (READY / AT RISK / BLOCKED), KPI cards, charts, daily trend, traceability matrix, gap list with clause and corrective action, risk-control table, settings |
+| **One-click fixes** | Every gap has a fix button that creates the missing Jira work, linked into the trace: a verification test, a risk control, a story or a defect. It can also re-open a test whose requirement changed. Runs as the user and never creates duplicates |
 | **Release gate** | Choose a fixVersion to answer "can we ship v2.1?" with evidence |
 | **Jira issue panel** | Upstream and downstream trace for any issue, its gaps, *"if this changes"* impact analysis, and linked PRs and deployments from **Teamwork Graph** |
 | **Audit dossier → Confluence** | One click writes a review-ready page: summary, matrix, risk controls, gaps, sign-off table |
 | **Confluence macro** | Live readiness badge for a project or release, embedded in any page (design reviews, release notes) |
-| **Rovo agent "Tracewell Auditor"** | Answers auditor questions in natural language with live evidence |
-| **MCP server (`rovo:mcp`)** | The same four tools for Claude, Cursor or VS Code, plus a [SKILL.md](skills/tracewell/SKILL.md) for third-party agents |
+| **Rovo agent "Tracewell Auditor"** | Answers auditor questions in natural language with live evidence, and fixes a gap on request (Rovo asks the user to confirm before any write) |
+| **MCP server (`rovo:mcp`)** | The same five tools for Claude, Cursor or VS Code, plus a [SKILL.md](skills/tracewell/SKILL.md) for third-party agents |
 | **Scheduled trigger** | Daily snapshot that builds the readiness trend line |
 | **One-click demo** | Loads *PumpOS*, a fictional insulin pump with 26 linked issues that cover every kind of gap |
 
@@ -48,13 +49,13 @@ Jira issues + links + changelog ─┐
 Teamwork Graph (PRs, deploys) ───┼─► service.js ─► engine.js (pure, unit-tested)
 KVS (config, snapshots) ─────────┘        │
                                           ├─► UI Kit: project page · issue panel · Confluence macro
-                                          ├─► Rovo agent actions (4) ─┐
-                                          ├─► rovo:mcp tools (same 4) ┘ external AI clients
+                                          ├─► Rovo agent actions (5) ─┐
+                                          ├─► rovo:mcp tools (same 5) ┘ external AI clients
                                           ├─► Confluence dossier export
                                           └─► scheduledTrigger (daily snapshot)
 ```
-- **`src/lib/engine.js`** contains the trace graph, checks, scoring, release gate, impact analysis and trace view. Pure JS with no Forge imports, covered by 13 unit tests that use the same PumpOS dataset the demo seeds, plus 13 end-to-end tests that run the real resolvers, seeder, Rovo actions and dossier export against in-memory fakes of Jira, Confluence, Teamwork Graph and KVS.
-- **Security.** Every read runs `asUser()`, so people only see what Jira lets them see. An external MCP call that cannot act as the user falls back to `asApp()` **only after** an explicit `BROWSE_PROJECTS` permission check for that account. Read-only `GET` actions, no egress, and least-privilege scopes.
+- **`src/lib/engine.js`** contains the trace graph, checks, scoring, release gate, impact analysis and trace view. Pure JS with no Forge imports, covered by 13 unit tests that use the same PumpOS dataset the demo seeds, plus 18 end-to-end tests that run the real resolvers, seeder, one-click fixes, Rovo actions and dossier export against in-memory fakes of Jira, Confluence, Teamwork Graph and KVS.
+- **Security.** Every read runs `asUser()`, so people only see what Jira lets them see. An external MCP call that cannot act as the user falls back to `asApp()` **only after** an explicit `BROWSE_PROJECTS` permission check for that account. Four read-only `GET` actions plus one `CREATE` action (fix a gap) that runs **only** as the user, never as the app, and is confirmed in Rovo. No egress, and least-privilege scopes.
 - **Suspect links** use the bulk changelog API (`summary`/`description` changes only), so a status change or a new link never raises a false alarm.
 - **Teamwork Graph** uses the curated queries `jiraWorkItemLinkedExternalPullRequests` and `jiraWorkItemLinkedExternalDeployments`. It checks `errors` even on HTTP 200, uses `<company>_<operation>` names, and degrades gracefully while the API is in Preview.
 
@@ -78,7 +79,7 @@ src/agent.js              Rovo actions / MCP tools
 src/lib/engine.js         Compliance engine (pure)
 src/lib/frameworks.js     IEC 62304, ISO 26262, SOC 2 packs
 src/lib/demoData.js       PumpOS dataset (seeded and tested)
-src/lib/{jira,twg,confluence,seed,storage,service}.js
+src/lib/{jira,twg,confluence,seed,storage,service,remedy}.js
 src/frontend/*.jsx        UI Kit: project page, issue panel, macro
 test/                     Engine unit tests + end-to-end tests with Forge API fakes
 scripts/                  Offline verification (bundle, prop types, manifest, lint)
